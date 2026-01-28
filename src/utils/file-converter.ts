@@ -64,12 +64,29 @@ export async function convertToFormat(
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
   try {
-    const pdfParseModule = await import("pdf-parse");
-    const pdfParse = pdfParseModule.default;
-    const data = await pdfParse(buffer);
-    return data.text;
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
+    // Load the PDF document from the buffer
+    const data = new Uint8Array(buffer);
+    const loadingTask = pdfjsLib.getDocument({ data });
+    const pdf = await loadingTask.promise;
+
+    // Extract text from all pages
+    const textParts: string[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pageText = (textContent.items as any[])
+        .filter((item) => typeof item.str === "string")
+        .map((item) => item.str as string)
+        .join(" ");
+      textParts.push(pageText);
+    }
+
+    return textParts.join("\n\n");
   } catch (error) {
-    throw new Error(`Failed to parse PDF: ${error}. Ensure pdf-parse is installed.`);
+    throw new Error(`Failed to parse PDF: ${error}`);
   }
 }
 

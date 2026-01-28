@@ -197,11 +197,22 @@ export async function getFileMetadata(
   return response.data;
 }
 
+// Binary MIME types that should not be converted to UTF-8 string
+const BINARY_MIME_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/msword",
+  "application/vnd.ms-excel",
+  "application/vnd.ms-powerpoint",
+];
+
 export async function getFileContent(
   drive: DriveClient,
   fileId: string,
   mimeType: string
-): Promise<string> {
+): Promise<string | Buffer> {
   // For Google Workspace files, export to appropriate format
   if (mimeType.startsWith("application/vnd.google-apps.")) {
     return exportGoogleFile(drive, fileId, mimeType);
@@ -213,7 +224,15 @@ export async function getFileContent(
     { responseType: "arraybuffer" }
   );
 
-  return Buffer.from(response.data as ArrayBuffer).toString("utf-8");
+  const buffer = Buffer.from(response.data as ArrayBuffer);
+
+  // Return Buffer for binary files to preserve data integrity
+  if (BINARY_MIME_TYPES.includes(mimeType)) {
+    return buffer;
+  }
+
+  // Convert text-based files to string
+  return buffer.toString("utf-8");
 }
 
 async function exportGoogleFile(

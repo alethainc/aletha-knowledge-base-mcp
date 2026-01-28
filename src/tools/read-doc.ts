@@ -48,7 +48,7 @@ export async function readDoc(
   }
 
   // Get file content
-  let rawContent: string;
+  let rawContent: string | Buffer;
   try {
     rawContent = await getFileContent(drive, doc_id, metadata.mimeType);
   } catch (error) {
