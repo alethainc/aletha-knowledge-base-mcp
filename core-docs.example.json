@@ -1,0 +1,22 @@
+{
+  "coreDocs": [
+    {
+      "id": "DOCUMENT_ID_FROM_GOOGLE_DRIVE",
+      "name": "Brand Guidelines",
+      "description": "Logo usage, colors, typography, and brand voice standards",
+      "category": "Brand"
+    },
+    {
+      "id": "ANOTHER_DOCUMENT_ID",
+      "name": "Employee Handbook",
+      "description": "Company policies, benefits, PTO, and procedures",
+      "category": "Policy"
+    },
+    {
+      "id": "THIRD_DOCUMENT_ID",
+      "name": "Architecture Overview",
+      "description": "System architecture, tech stack, and design decisions",
+      "category": "Technical"
+    }
+  ]
+}

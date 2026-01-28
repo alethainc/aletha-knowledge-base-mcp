@@ -1,0 +1,38 @@
+{
+  "name": "aletha-knowledge-base-mcp",
+  "version": "1.0.0",
+  "description": "MCP server connecting Claude Code to Aletha's Google Drive knowledge base",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "auth": "node dist/auth-cli.js"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "google-drive",
+    "knowledge-base"
+  ],
+  "author": "Aletha",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "googleapis": "^131.0.0",
+    "mammoth": "^1.6.0",
+    "pdf-parse": "^1.1.1",
+    "turndown": "^7.2.0",
+    "open": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/turndown": "^5.0.4",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
