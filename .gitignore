@@ -8,6 +8,11 @@ dist/
 config.json
 core-docs.json
 
+# Service account keys (NEVER commit these)
+*-service-account*.json
+aletha-knowledge-base-mcp-*.json
+*.pem
+
 # Tokens
 tokens/
 
@@ -22,6 +27,9 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Installer distribution (contains embedded secrets)
+installer/dist/
 
 # Environment
 .env
