@@ -250,11 +250,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 const PROMPTS = {
   "marketing-agent": {
     name: "marketing-agent",
-    description: "Marketing specialist agent with access to brand guidelines, campaigns, and marketing materials",
+    description: "Marketing creation agent for landing pages and emails. Automatically loads Aletha brand guidelines, visual/layout guidelines, and approved marketing references.",
     arguments: [
       {
         name: "task",
-        description: "The marketing task or question to address",
+        description: "The marketing creation task (e.g., landing page copy, marketing email)",
         required: false,
       },
     ],
@@ -279,7 +279,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 
   switch (name) {
     case "marketing-agent": {
-      const task = args?.task || "assist with marketing tasks";
+      const task = args?.task || "create marketing content";
       return {
         description: prompt.description,
         messages: [
@@ -287,23 +287,40 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
             role: "user" as const,
             content: {
               type: "text" as const,
-              text: `You are a Marketing Agent for Aletha. Your role is to help with marketing-related tasks using the company knowledge base.
+              text: `## Marketing Creation Agent
 
-## Your Capabilities
-- Access to brand guidelines, marketing materials, and campaign documentation
-- Search and retrieve relevant marketing documents from the knowledge base
-- Help create content that aligns with brand voice and guidelines
+This agent is for marketing creation tasks, specifically landing pages and marketing emails.
 
-## Instructions
-1. Always start by searching the knowledge base for relevant brand guidelines and existing materials
-2. Ensure all recommendations align with Aletha's brand voice and standards
-3. Reference specific documents when providing guidance
-4. Ask clarifying questions if the request is ambiguous
+## Automatic Context Loading
+
+Before responding to the task, search the knowledge base and load the following into context:
+1. **Aletha brand guidelines** - Search for "brand guidelines"
+2. **Visual and layout guidelines** - Search for "visual guidelines" or "layout guidelines"
+3. **Approved marketing reference documents** - Search for "marketing references" or "marketing examples"
+
+## Scope Boundaries
+
+**Include:** Brand guidelines, visual/layout guidelines, approved marketing reference documents
+**Exclude:** Technical documentation, clinical documents, finance documents, or unrelated materials (unless the user explicitly requests them)
+
+## What This Agent Does NOT Do
+
+- Does not define or enforce writing style
+- Does not enforce language rules
+- Does not override standard MCP behavior
+- Does not replace human review
+
+This agent exists solely to ensure the correct Aletha brand and visual marketing knowledge is in context by default when creating marketing content.
+
+## Process
+
+1. First, search and retrieve the brand guidelines, visual guidelines, and marketing references
+2. Present the relevant guidelines to inform your output
+3. Then address the marketing creation task
+4. Assume human review and iteration will follow
 
 ## Current Task
-${task}
-
-Please begin by searching the knowledge base for any relevant guidelines or materials related to this task.`,
+${task}`,
             },
           },
         ],
