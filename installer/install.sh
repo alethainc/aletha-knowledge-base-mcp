@@ -168,9 +168,10 @@ if [[ ! -d "$EXTRACTED_DIR" ]]; then
     fail "Unexpected archive structure - expected $EXTRACTED_DIR"
 fi
 
-# Move contents to server directory
-mv "$EXTRACTED_DIR"/* "$SERVER_DIR/"
-rmdir "$EXTRACTED_DIR"
+# Move contents to server directory (including hidden files)
+mv "$EXTRACTED_DIR"/* "$SERVER_DIR/" 2>/dev/null || true
+mv "$EXTRACTED_DIR"/.[!.]* "$SERVER_DIR/" 2>/dev/null || true
+rm -rf "$EXTRACTED_DIR"
 rm repo.tar.gz
 
 print_success "Server files extracted"
