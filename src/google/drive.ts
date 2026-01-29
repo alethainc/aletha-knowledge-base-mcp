@@ -1,10 +1,10 @@
 import { google, drive_v3 } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
 import { Config } from "../config/loader.js";
+import { AuthClient } from "./auth.js";
 
 export type DriveClient = drive_v3.Drive;
 
-export function createDriveClient(auth: OAuth2Client): DriveClient {
+export function createDriveClient(auth: AuthClient): DriveClient {
   return google.drive({ version: "v3", auth });
 }
 

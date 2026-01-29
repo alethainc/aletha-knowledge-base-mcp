@@ -1,15 +1,17 @@
 import { google } from "googleapis";
-import { OAuth2Client, Credentials } from "google-auth-library";
+import { OAuth2Client, Credentials, JWT } from "google-auth-library";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { createServer } from "http";
 import { URL } from "url";
-import { Config, getTokensDir } from "../config/loader.js";
+import { Config, getTokensDir, loadServiceAccountCredentials } from "../config/loader.js";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/drive.readonly",
   "https://www.googleapis.com/auth/drive.metadata.readonly",
 ];
+
+export type AuthClient = OAuth2Client | JWT;
 
 export function createOAuth2Client(config: Config): OAuth2Client {
   return new google.auth.OAuth2(
@@ -46,9 +48,27 @@ export function saveTokens(tokens: Credentials): void {
   writeFileSync(tokenPath, JSON.stringify(tokens, null, 2));
 }
 
+export function createServiceAccountClient(config: Config): JWT {
+  const credentials = loadServiceAccountCredentials(config);
+  return new google.auth.JWT({
+    email: credentials.client_email,
+    key: credentials.private_key,
+    scopes: SCOPES,
+  });
+}
+
 export async function getAuthenticatedClient(
   config: Config
-): Promise<OAuth2Client> {
+): Promise<AuthClient> {
+  const authType = config.google.authType || "oauth";
+
+  if (authType === "service_account") {
+    const jwtClient = createServiceAccountClient(config);
+    await jwtClient.authorize();
+    return jwtClient;
+  }
+
+  // OAuth flow
   const oauth2Client = createOAuth2Client(config);
   const storedTokens = loadStoredTokens();
 
@@ -103,7 +123,8 @@ export async function exchangeCodeForTokens(
 
 export async function authenticateInteractive(config: Config): Promise<void> {
   return new Promise((resolve, reject) => {
-    const redirectUrl = new URL(config.google.redirectUri);
+    const redirectUri = config.google.redirectUri || "http://localhost:3000/oauth/callback";
+    const redirectUrl = new URL(redirectUri);
     const port = parseInt(redirectUrl.port) || 3000;
 
     const server = createServer(async (req, res) => {

@@ -5,12 +5,26 @@
     "type": "folder"
   },
   "google": {
-    "clientId": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-    "clientSecret": "YOUR_CLIENT_SECRET",
-    "redirectUri": "http://localhost:3000/oauth/callback"
+    "authType": "service_account",
+    "serviceAccountKeyFile": "/path/to/service-account-key.json"
   },
   "defaults": {
     "maxSearchResults": 10,
     "outputFormat": "markdown"
+  },
+  "_comments": {
+    "authType": "Use 'service_account' (recommended for teams) or 'oauth' (for personal use)",
+    "oauth_example": {
+      "authType": "oauth",
+      "clientId": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+      "clientSecret": "YOUR_CLIENT_SECRET",
+      "redirectUri": "http://localhost:3000/oauth/callback"
+    },
+    "service_account_alternatives": [
+      "1. serviceAccountKeyFile: path to JSON key file",
+      "2. serviceAccount: { client_email, private_key } embedded in config",
+      "3. GOOGLE_SERVICE_ACCOUNT_KEY env var (base64 encoded JSON)",
+      "4. GOOGLE_APPLICATION_CREDENTIALS env var (path to JSON key)"
+    ]
   }
 }

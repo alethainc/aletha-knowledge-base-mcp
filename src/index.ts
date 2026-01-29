@@ -10,7 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { loadConfig, loadCoreDocs, Config } from "./config/loader.js";
-import { getAuthenticatedClient } from "./google/auth.js";
+import { getAuthenticatedClient, AuthClient } from "./google/auth.js";
 import { createDriveClient, DriveClient } from "./google/drive.js";
 import { searchDocs, formatSearchResults, SearchDocsArgs } from "./tools/search-docs.js";
 import { listFolder, formatFolderListing, ListFolderArgs } from "./tools/list-folder.js";
@@ -248,7 +248,9 @@ async function main() {
   try {
     // Load configuration
     config = loadConfig();
+    const authType = config.google.authType || "oauth";
     console.error(`[aletha-mcp] Loaded configuration for: ${config.knowledgeBase.rootFolderName}`);
+    console.error(`[aletha-mcp] Authentication type: ${authType}`);
 
     // Start the server
     const transport = new StdioServerTransport();
