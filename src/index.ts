@@ -7,6 +7,8 @@ import {
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { loadConfig, loadCoreDocs, Config } from "./config/loader.js";
@@ -37,6 +39,7 @@ const server = new Server(
     capabilities: {
       tools: {},
       resources: {},
+      prompts: {},
     },
   }
 );
@@ -240,6 +243,75 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to read resource: ${errorMessage}`);
+  }
+});
+
+// Define available prompts
+const PROMPTS = {
+  "marketing-agent": {
+    name: "marketing-agent",
+    description: "Marketing specialist agent with access to brand guidelines, campaigns, and marketing materials",
+    arguments: [
+      {
+        name: "task",
+        description: "The marketing task or question to address",
+        required: false,
+      },
+    ],
+  },
+};
+
+// List available prompts
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+  return {
+    prompts: Object.values(PROMPTS),
+  };
+});
+
+// Get a specific prompt
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  const prompt = PROMPTS[name as keyof typeof PROMPTS];
+  if (!prompt) {
+    throw new Error(`Unknown prompt: ${name}`);
+  }
+
+  switch (name) {
+    case "marketing-agent": {
+      const task = args?.task || "assist with marketing tasks";
+      return {
+        description: prompt.description,
+        messages: [
+          {
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `You are a Marketing Agent for Aletha. Your role is to help with marketing-related tasks using the company knowledge base.
+
+## Your Capabilities
+- Access to brand guidelines, marketing materials, and campaign documentation
+- Search and retrieve relevant marketing documents from the knowledge base
+- Help create content that aligns with brand voice and guidelines
+
+## Instructions
+1. Always start by searching the knowledge base for relevant brand guidelines and existing materials
+2. Ensure all recommendations align with Aletha's brand voice and standards
+3. Reference specific documents when providing guidance
+4. Ask clarifying questions if the request is ambiguous
+
+## Current Task
+${task}
+
+Please begin by searching the knowledge base for any relevant guidelines or materials related to this task.`,
+            },
+          },
+        ],
+      };
+    }
+
+    default:
+      throw new Error(`Prompt not implemented: ${name}`);
   }
 });
 
