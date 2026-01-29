@@ -61,47 +61,34 @@ The installer bundles Node.js 22.11.0 to ensure pdfjs-dist compatibility.
 ### Distribution Architecture
 
 ```
-GitHub Gist (install.sh) → Google Drive (server.zip + config.json) → User's machine
+GitHub (public repo) → Server code
+Google Drive → Config with credentials (private)
 ```
 
-The repo is private, so `install.sh` is hosted on a public GitHub Gist. The script downloads the server bundle and config from Google Drive.
+The install script pulls server code directly from GitHub and builds it on the user's machine. Only the config.json (which contains service account credentials) comes from Google Drive.
 
-### Updating the Installer for Coworkers
+### Updating for Coworkers
 
-After making code changes, follow these steps to update the distributed version:
+After making code changes:
 
-1. **Build the project**
+1. **Commit and push to GitHub**
    ```bash
-   npm run build
+   git add . && git commit -m "Your changes" && git push
    ```
 
-2. **Rebuild the distribution bundle**
+2. **Coworkers reinstall** by running:
    ```bash
-   ./installer/bundle-for-distribution.sh
-   ```
-   This creates a new `installer/dist/aletha-kb-server.zip`
-
-3. **Upload to Google Drive**
-   - Go to Google Drive and find the existing `aletha-kb-server.zip`
-   - Right-click → Manage versions → Upload new version
-   - Upload the new zip from `installer/dist/aletha-kb-server.zip`
-   - This keeps the same file ID so install URLs don't change
-
-4. **Update the Gist (only if install.sh changed)**
-   ```bash
-   gh gist edit 3bbfef5f54c1de4d0977ef72f9bc817e installer/install.sh
+   curl -fsSL https://raw.githubusercontent.com/alethainc/aletha-knowledge-base-mcp/main/installer/install.sh | bash
    ```
 
-5. **Coworkers reinstall** by running the same curl command:
-   ```bash
-   curl -fsSL https://gist.githubusercontent.com/mjcanniffe1/3bbfef5f54c1de4d0977ef72f9bc817e/raw/install.sh | bash
-   ```
+That's it! No manual uploads needed. The installer pulls the latest code from GitHub.
 
-### Google Drive File IDs
+### Google Drive (Config Only)
 
-The install script references these Google Drive files (update if you create new files):
-- Server zip: `1V07s46KV2iytevyK7W_JPXq67wZ2TBPJ`
-- Config: `1QzBku6dgGNwLwfGxKLmDGIHrewIyGbdn`
+The config.json with service account credentials is stored on Google Drive:
+- Config file ID: `1QzBku6dgGNwLwfGxKLmDGIHrewIyGbdn`
+
+Only update this if credentials change.
 
 ## Key Dependencies
 

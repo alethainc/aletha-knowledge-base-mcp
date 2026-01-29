@@ -8,8 +8,11 @@
 
 set -e
 
-# Configuration - these URLs point to the server bundle and config on Google Drive
-SERVER_ZIP_URL="https://drive.google.com/uc?export=download&id=1V07s46KV2iytevyK7W_JPXq67wZ2TBPJ"
+# Configuration
+# Server code is pulled directly from GitHub (public repo)
+# Config with credentials is stored on Google Drive (private)
+GITHUB_REPO="alethainc/aletha-knowledge-base-mcp"
+GITHUB_BRANCH="main"
 CONFIG_URL="https://drive.google.com/uc?export=download&id=1QzBku6dgGNwLwfGxKLmDGIHrewIyGbdn"
 
 # Styling
@@ -142,67 +145,63 @@ print_success "Node.js $NODE_INSTALLED_VERSION installed"
 echo ""
 
 #============================================================================
-# Download MCP Server
+# Download MCP Server from GitHub
 #============================================================================
 
-print_step "Downloading Aletha Knowledge Base server..."
+print_step "Downloading Aletha Knowledge Base server from GitHub..."
 
 cd "$INSTALL_DIR"
 
-# Google Drive may require confirmation for large files - handle both cases
-if ! curl -fSL "$SERVER_ZIP_URL" -o server.zip 2>/dev/null; then
-    fail "Failed to download server files"
-fi
+GITHUB_TARBALL_URL="https://github.com/${GITHUB_REPO}/archive/refs/heads/${GITHUB_BRANCH}.tar.gz"
 
-# Check if we got an HTML page (Google Drive confirmation) instead of a zip
-if file server.zip | grep -q "HTML"; then
-    # Extract confirmation token and retry
-    CONFIRM=$(grep -o 'confirm=[^&]*' server.zip | head -1 | cut -d= -f2)
-    if [[ -n "$CONFIRM" ]]; then
-        print_step "Handling large file confirmation..."
-        curl -fSL "${SERVER_ZIP_URL}&confirm=${CONFIRM}" -o server.zip 2>/dev/null || fail "Failed to download server files"
-    fi
+if ! curl -fSL "$GITHUB_TARBALL_URL" -o repo.tar.gz 2>/dev/null; then
+    fail "Failed to download server from GitHub. Is the repo public?"
 fi
 
 print_step "Extracting server files..."
-unzip -q server.zip -d server_temp || fail "Failed to extract server files"
+tar -xzf repo.tar.gz || fail "Failed to extract server files"
 
-# Handle both flat and nested zip structures
-if [[ -d "server_temp/aletha-knowledge-base-mcp" ]]; then
-    mv server_temp/aletha-knowledge-base-mcp/* "$SERVER_DIR/"
-elif [[ -d "server_temp/dist" ]]; then
-    mv server_temp/* "$SERVER_DIR/"
-else
-    PKG_DIR=$(find server_temp -name "package.json" -maxdepth 2 | head -1 | xargs dirname 2>/dev/null)
-    if [[ -n "$PKG_DIR" ]]; then
-        mv "$PKG_DIR"/* "$SERVER_DIR/"
-    else
-        mv server_temp/* "$SERVER_DIR/"
-    fi
+# GitHub tarballs extract to {repo-name}-{branch}/
+EXTRACTED_DIR="aletha-knowledge-base-mcp-${GITHUB_BRANCH}"
+
+if [[ ! -d "$EXTRACTED_DIR" ]]; then
+    fail "Unexpected archive structure - expected $EXTRACTED_DIR"
 fi
 
-rm -rf server_temp
-rm server.zip
+# Move contents to server directory
+mv "$EXTRACTED_DIR"/* "$SERVER_DIR/"
+rmdir "$EXTRACTED_DIR"
+rm repo.tar.gz
 
 print_success "Server files extracted"
 
 echo ""
 
 #============================================================================
-# Install npm Dependencies
+# Build the Server
 #============================================================================
 
-print_step "Installing dependencies (this may take a minute)..."
+print_step "Installing dependencies and building..."
 cd "$SERVER_DIR"
 
 export PATH="$NODE_DIR/bin:$PATH"
 
-if ! "$NPM_BIN" install --production --silent 2>/dev/null; then
-    # Retry without silent flag to see errors
-    "$NPM_BIN" install --production || fail "Failed to install dependencies"
+# Install all dependencies (including devDependencies for build)
+if ! "$NPM_BIN" install --silent 2>/dev/null; then
+    "$NPM_BIN" install || fail "Failed to install dependencies"
 fi
 
-print_success "Dependencies installed"
+# Build TypeScript
+print_step "Compiling TypeScript..."
+if ! "$NPM_BIN" run build 2>/dev/null; then
+    "$NPM_BIN" run build || fail "Failed to build server"
+fi
+
+# Clean up devDependencies to save space
+print_step "Cleaning up..."
+"$NPM_BIN" prune --production --silent 2>/dev/null || true
+
+print_success "Server built successfully"
 
 echo ""
 
