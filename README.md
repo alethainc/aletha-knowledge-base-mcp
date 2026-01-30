@@ -4,6 +4,18 @@ An MCP (Model Context Protocol) server that connects Claude Code to Aletha's Goo
 
 ## Quick Start (Aletha Team)
 
+### One-Line Install (Claude Desktop)
+
+Open Terminal and run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/alethainc/aletha-knowledge-base-mcp/main/installer/install.sh | bash
+```
+
+Then restart Claude Desktop.
+
+### Manual Install (Claude Code)
+
 1. Clone this repo and install:
    ```bash
    git clone git@github.com:alethainc/aletha-knowledge-base-mcp.git
@@ -120,32 +132,58 @@ claude mcp list
 
 ## Usage
 
-Once configured, you can use these tools in Claude Code:
+Once installed, use these commands naturally in conversation with Claude:
 
-### Search Documents
+### Search for Documents
+
+> "Search the knowledge base for brand guidelines"
+> "Find documents about onboarding"
+> "Look for PTO policy in the knowledge base"
+
+### Browse Folders
+
+> "List the folders in the knowledge base"
+> "Show me what's in the Marketing folder"
+> "Browse the root folder"
+
+### Read a Document
+
+After searching, you can read the full content:
+
+> "Read that brand guidelines document"
+> "Load the first document into context"
+> "Show me the full content of [document name]"
+
+### List Core Documents
+
+> "What are the core documents?"
+> "Show me the essential documents"
+
+### Using the Marketing Agent
+
+For marketing content creation, invoke the marketing agent prompt:
+
+> "Use the marketing-agent prompt to create a landing page for our new product"
+> "Get the marketing-agent prompt and help me write a marketing email"
+
+This automatically loads brand guidelines, visual guidelines, and marketing references from the knowledge base before helping with your task.
+
+### Tips
+
+- Be specific: "Search the knowledge base for X" works better than just "find X"
+- Claude will use the `search_docs` and `read_doc` tools automatically
+- Documents are pulled from the connected Google Drive folder
+
+### Technical Reference
+
+For direct tool invocation:
 
 ```
 search_docs(query: "brand guidelines")
 search_docs(query: "PTO policy", file_type: "document")
-```
-
-### Browse Folders
-
-```
-list_folder()  // List root folder
-list_folder(folder_id: "abc123")  // List specific folder
-```
-
-### Read Documents
-
-```
+list_folder()
+list_folder(folder_id: "abc123")
 read_doc(doc_id: "abc123xyz")
-read_doc(doc_id: "abc123xyz", format: "text")
-```
-
-### List Core Documents
-
-```
 list_core_docs()
 ```
 
