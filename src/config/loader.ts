@@ -260,6 +260,18 @@ export function loadConfig(): Config {
   return config;
 }
 
+export function getKBMapPath(): string {
+  return join(getConfigDir(), "kb-map.md");
+}
+
+export function loadKBMap(): string | null {
+  const mapPath = getKBMapPath();
+  if (!existsSync(mapPath)) {
+    return null;
+  }
+  return readFileSync(mapPath, "utf-8");
+}
+
 export function loadCoreDocs(): CoreDocsConfig {
   const coreDocsPath = getCoreDocsPath();
 

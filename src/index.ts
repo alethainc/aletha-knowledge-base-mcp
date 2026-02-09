@@ -18,6 +18,8 @@ import { searchDocs, formatSearchResults, SearchDocsArgs } from "./tools/search-
 import { listFolder, formatFolderListing, ListFolderArgs } from "./tools/list-folder.js";
 import { readDoc, formatDocContent, ReadDocArgs } from "./tools/read-doc.js";
 import { listCoreDocs, formatCoreDocs } from "./tools/list-core.js";
+import { getKBMap, formatKBMap } from "./tools/kb-map.js";
+import { loadKBMap } from "./config/loader.js";
 
 let config: Config;
 let driveClient: DriveClient | null = null;
@@ -124,6 +126,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "get_kb_map",
+        description:
+          "Get the knowledge base map — a guide describing what documents are available, what each one is about, and when to use them. Use this to orient yourself in the knowledge base.",
+        inputSchema: {
+          type: "object" as const,
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -131,6 +142,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+
+  // Tools that don't require Drive access
+  if (name === "get_kb_map") {
+    const result = getKBMap();
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: formatKBMap(result),
+        },
+      ],
+    };
+  }
 
   try {
     const drive = await getDriveClient();
@@ -205,14 +229,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   const coreDocs = loadCoreDocs();
 
-  return {
-    resources: coreDocs.coreDocs.map((doc) => ({
-      uri: `aletha://knowledge-base/${doc.id}`,
+  const resources = coreDocs.coreDocs.map((doc) => ({
+    uri: `aletha://knowledge-base/${doc.id}`,
+    mimeType: "text/markdown",
+    name: doc.name,
+    description: doc.description,
+  }));
+
+  // Add KB map as a resource if it exists
+  const mapContent = loadKBMap();
+  if (mapContent) {
+    resources.unshift({
+      uri: "aletha://knowledge-base/map",
       mimeType: "text/markdown",
-      name: doc.name,
-      description: doc.description,
-    })),
-  };
+      name: "Knowledge Base Map",
+      description: "A guide describing what documents are available in the knowledge base, what each one is about, and when to use them.",
+    });
+  }
+
+  return { resources };
 });
 
 // Read a resource
@@ -226,6 +261,20 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
 
   const docId = match[1];
+
+  // Handle the KB map resource
+  if (docId === "map") {
+    const result = getKBMap();
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "text/markdown",
+          text: formatKBMap(result),
+        },
+      ],
+    };
+  }
 
   try {
     const drive = await getDriveClient();
@@ -259,6 +308,33 @@ const PROMPTS = {
       },
     ],
   },
+  "kb-init": {
+    name: "kb-init",
+    description: "Initialize context with the knowledge base map. Loads a guide describing what documents are available, how to categorize them, and when to use them.",
+    arguments: [
+      {
+        name: "task_context",
+        description: "What you're working on (e.g., 'creating a landing page', 'writing clinical content'). Helps frame which documents are most relevant.",
+        required: false,
+      },
+    ],
+  },
+  "website-guide": {
+    name: "website-guide",
+    description: "Website guide creation agent optimized for AEO (Answer Engine Optimization) and SEO. Provides format requirements, templates, and best practices for Aletha Health website guides.",
+    arguments: [
+      {
+        name: "topic",
+        description: "The guide topic or condition to write about (e.g., 'tight hip flexors', 'SI joint pain', 'yoga and hip pain')",
+        required: false,
+      },
+      {
+        name: "guide_type",
+        description: "The type of guide: condition, activity, product, comparison, or method (defaults to condition)",
+        required: false,
+      },
+    ],
+  },
 };
 
 // List available prompts
@@ -278,6 +354,39 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   }
 
   switch (name) {
+    case "kb-init": {
+      const mapResult = getKBMap();
+      const mapContent = formatKBMap(mapResult);
+      const taskContext = args?.task_context;
+
+      const contextLine = taskContext
+        ? `\nYour current task: ${taskContext}. Pay special attention to documents relevant to this work.\n`
+        : "";
+
+      return {
+        description: prompt.description,
+        messages: [
+          {
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `You have access to the Aletha knowledge base through MCP tools. Below is a map of what's available. Read it to understand what documents exist and when to use them.
+
+Internalize this as background knowledge — use it to inform your decisions, not as rigid instructions to follow literally.
+${contextLine}
+---
+
+${mapContent}
+
+---
+
+Use \`read_doc\` with a document ID to load specific documents when needed.`,
+            },
+          },
+        ],
+      };
+    }
+
     case "marketing-agent": {
       const task = args?.task || "create marketing content";
       return {
@@ -325,6 +434,545 @@ This agent exists solely to ensure the correct Aletha brand and visual marketing
 
 ## Current Task
 ${task}`,
+            },
+          },
+        ],
+      };
+    }
+
+    case "website-guide": {
+      const topic = args?.topic || "a health/wellness topic";
+      const guideType = args?.guide_type || "condition";
+      return {
+        description: prompt.description,
+        messages: [
+          {
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `## Aletha Health Website Guide Creation Agent
+
+This agent creates website guides optimized for both Answer Engine Optimization (AEO) and Search Engine Optimization (SEO). All content is designed to perform well in AI-generated answers (ChatGPT, Perplexity, Google AI Overviews) while also ranking in traditional search.
+
+## Automatic Context Loading
+
+Before creating the guide, use the Aletha Knowledge Base MCP tools to load relevant context:
+
+1. **Brand guidelines** - Use \`search_docs\` with query "brand guidelines", then \`read_doc\` to load
+2. **Existing guides for reference** - Use \`search_docs\` with query "website guide" or the topic name to find similar content
+3. **Clinical/medical references** - Use \`search_docs\` with the condition/topic name to find supporting documentation
+
+**IMPORTANT:** Use the \`search_docs\` and \`read_doc\` tools from the aletha-knowledge-base MCP server.
+
+---
+
+## Content Requirements
+
+### E-E-A-T Requirements (Critical for Health/YMYL Content)
+
+**Experience**
+- Include real-world patient scenarios or case examples (anonymized)
+- Reference Christine's 25 years of physical therapy experience
+- Add first-hand observations from clinical practice
+- Include "what I've seen in my practice" insights
+
+**Expertise**
+- Author attribution: Christine Annie, MPT (Physical Therapist)
+- Include author bio with credentials at top or bottom
+- Reference relevant certifications and specializations
+- Link to Christine's about/credentials page
+
+**Authoritativeness**
+- Cite peer-reviewed sources where applicable (PubMed, medical journals)
+- Reference established medical organizations (NIH, Mayo Clinic, etc.)
+- Include internal links to related Aletha Health content
+- Date published and last updated clearly displayed
+
+**Trustworthiness**
+- Include medical disclaimer: "This information is not a substitute for professional medical advice. Consult a healthcare provider for personal guidance."
+- Transparent about product recommendations (disclose Aletha affiliation)
+- Accurate, fact-checked information
+- Clear contact information accessible
+
+---
+
+### AEO (Answer Engine Optimization) Requirements
+
+**Direct Answer Format**
+- Lead with a concise, direct answer in the first 1-2 sentences
+- Answer the primary question within the first 50 words
+- Use the "answer-first" structure (conclusion → supporting details)
+
+**Question-Based Structure**
+- Main H1 should be the primary question or include the question
+- Use H2s formatted as questions users actually ask
+- Include a "Quick Answer" or "Key Takeaway" box at the top
+
+**LLM-Friendly Formatting**
+- Clear, logical hierarchy (H1 → H2 → H3)
+- Short paragraphs (2-4 sentences max)
+- Bullet points for lists, comparison tables for alternatives
+- Definition boxes for key terms
+
+**Citation-Ready Content**
+- Each major claim should be extractable as a standalone answer
+- Include specific data points, statistics, and timeframes
+- Make brand mentions natural and contextual (Aletha devices as solutions)
+
+---
+
+### SEO Requirements
+
+**Keyword Optimization**
+- Primary keyword in H1 title
+- Primary keyword in first 100 words
+- Secondary/related keywords in H2s
+- Natural keyword density (avoid stuffing)
+- Long-tail question keywords included
+
+**Meta Elements**
+- Meta title: 50-60 characters, includes primary keyword
+- Meta description: 150-160 characters, includes CTA and keyword
+- URL slug: short, keyword-rich, no stop words
+
+**Content Depth**
+- Minimum 1,500 words for comprehensive guides
+- Cover topic comprehensively (topical authority)
+- Address related questions and subtopics
+- Include "People Also Ask" questions as H2s
+
+**Internal/External Linking**
+- 3-5 internal links to related Aletha content
+- 2-3 external links to authoritative sources
+- Anchor text is descriptive (not "click here")
+
+---
+
+### Schema Markup Requirements
+
+Include these schema types:
+
+**MedicalWebPage Schema:**
+\`\`\`json
+{
+  "@context": "https://schema.org",
+  "@type": "MedicalWebPage",
+  "name": "[Guide Title]",
+  "description": "[Meta description]",
+  "url": "[Full URL]",
+  "datePublished": "[YYYY-MM-DD]",
+  "dateModified": "[YYYY-MM-DD]",
+  "author": {
+    "@type": "Person",
+    "@id": "https://alethahealth.com/about-christine-annie",
+    "name": "Christine Annie, MPT",
+    "jobTitle": "Physical Therapist",
+    "description": "Physical therapist with 25 years of experience, founder of Aletha Health"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Aletha Health",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://alethahealth.com/logo.png"
+    }
+  }
+}
+\`\`\`
+
+**FAQPage Schema** for FAQ sections and **HowTo Schema** for instructional content.
+
+---
+
+## Guide Templates by Type
+
+${guideType === "condition" ? `### Template: Condition Guide
+
+\`\`\`
+# [Condition Name]: The Complete Guide to Understanding and Treating [Condition]
+
+## Quick Answer
+[Direct answer: What causes this condition and how to address it - 2-3 sentences max]
+
+## What You'll Learn
+- [Key takeaway 1]
+- [Key takeaway 2]
+- [Key takeaway 3]
+
+---
+
+## What is [Condition]?
+[Definition and overview - 100 words max]
+
+## What Causes [Condition]?
+[Explanation with bulleted list of causes]
+
+### The Hidden Cause Most People Miss: Muscle Tension
+[Explain the muscle tension connection - this is your differentiator]
+
+## Symptoms of [Condition]
+[Bulleted list of common symptoms]
+
+## What Most People Try (That Doesn't Work Long-Term)
+[Acknowledge common treatments, explain limitations]
+
+## How to Actually Fix [Condition]: The Aletha Health Method
+
+### Step 1: Release the Tight Muscles
+[Instructions, which muscles, how long]
+
+### Step 2: Restore Alignment
+[What this means, how to do it]
+
+### Step 3: Strengthen and Stabilize
+[Exercises, progression]
+
+## How Aletha Tools Can Help
+[Natural product integration - Hip Hook/Mark, Range, Orbit as applicable]
+
+## How Long Does Recovery Take?
+[Realistic timeline, what affects it]
+
+## When to See a Professional
+[Red flags, when self-treatment isn't enough]
+
+## Frequently Asked Questions
+[3-5 FAQs minimum]
+
+## Key Takeaways
+[3-5 bullet summary]
+
+---
+
+## About the Author
+**Christine Annie, MPT**
+[Author bio]
+
+## Medical Disclaimer
+[Standard disclaimer]
+
+## References
+[Citations]
+
+**Last Updated:** [Date]
+\`\`\`` : guideType === "activity" ? `### Template: Activity/Lifestyle Guide
+
+\`\`\`
+# [Activity] and [Pain Type]: Why It Happens and How to Prevent It
+
+## Quick Answer
+[Direct answer about why this activity causes this issue and what to do - 2-3 sentences]
+
+## What You'll Learn
+- Why [activity] causes [problem]
+- Pre-[activity] routine to prevent issues
+- Post-[activity] recovery protocol
+- Long-term solutions
+
+---
+
+## Why Does [Activity] Cause [Problem]?
+[Explanation of biomechanics, muscle tension development]
+
+### The Muscles Most Affected by [Activity]
+[List with brief explanations]
+
+## Warning Signs You're Developing a Problem
+[Early symptoms to watch for]
+
+## Prevention: Your Pre-[Activity] Routine
+[Step-by-step warm-up/preparation]
+
+### 5-Minute Quick Prep
+[Abbreviated version]
+
+## Recovery: Your Post-[Activity] Routine
+[Step-by-step recovery protocol]
+
+### Using Aletha Tools for Recovery
+[Product integration]
+
+## Long-Term Solutions for [Activity] Enthusiasts
+[Ongoing maintenance]
+
+## Common Mistakes [Activity Participants] Make
+[What to avoid]
+
+## Frequently Asked Questions
+[3-5 FAQs]
+
+## Key Takeaways
+[Summary points]
+
+---
+
+## About the Author
+**Christine Annie, MPT**
+
+**Last Updated:** [Date]
+\`\`\`` : guideType === "product" ? `### Template: Product Education Guide
+
+\`\`\`
+# How to Use the [Product Name]: Complete Guide for Best Results
+
+## Quick Answer
+[What the product does and the key to using it effectively - 2-3 sentences]
+
+## What You'll Learn
+- Why the [Product] works
+- Step-by-step usage instructions
+- Pro tips from 25 years of clinical experience
+- Common mistakes to avoid
+- Troubleshooting guide
+
+---
+
+## Why the [Product] Works
+[Mechanism of action, why prolonged pressure is effective]
+
+### The Science Behind Prolonged Pressure
+[Brief explanation with citation]
+
+## Before You Start: Setup
+[Preparation, positioning, what you need]
+
+## How to Use the [Product]: Step-by-Step
+
+### Step 1: [First Step]
+[Detailed instructions]
+**What you should feel:** [Expected sensation]
+
+### Step 2: [Second Step]
+[Detailed instructions]
+**What you should feel:** [Expected sensation]
+
+[Continue as needed]
+
+## Pro Tips from Christine
+[Clinical insights, advanced techniques]
+
+## Common Mistakes to Avoid
+[Bulleted list]
+
+## What's Normal vs. What's Not
+
+### Normal Sensations
+[List]
+
+### Stop If You Experience
+[Red flags]
+
+## Progression: Taking It Further
+[How to advance, frequency]
+
+## Troubleshooting
+[Common issues and solutions]
+
+## Frequently Asked Questions
+[3-5 FAQs]
+
+## Key Takeaways
+[Summary]
+
+---
+
+## About the Author
+**Christine Annie, MPT**
+
+**Last Updated:** [Date]
+\`\`\`` : guideType === "comparison" ? `### Template: Comparison Guide
+
+\`\`\`
+# [Method/Tool A] vs. [Method/Tool B]: Which Is Better for [Goal]?
+
+## Quick Answer
+[Direct comparison verdict - when to use each - 2-3 sentences]
+
+## Comparison at a Glance
+
+| Factor | [Method A] | [Method B] |
+|--------|------------|------------|
+| Best for | [Use case] | [Use case] |
+| Mechanism | [How it works] | [How it works] |
+| Effectiveness | [Assessment] | [Assessment] |
+| Time required | [Duration] | [Duration] |
+| Cost | [Range] | [Range] |
+| Learning curve | [Rating] | [Rating] |
+| Can do at home | [Yes/No] | [Yes/No] |
+
+---
+
+## What is [Method A]?
+[Brief explanation]
+
+### Pros of [Method A]
+[List]
+
+### Cons of [Method A]
+[List]
+
+## What is [Method B]?
+[Brief explanation]
+
+### Pros of [Method B]
+[List]
+
+### Cons of [Method B]
+[List]
+
+## When to Use [Method A]
+[Specific scenarios]
+
+## When to Use [Method B]
+[Specific scenarios]
+
+## Can You Use Both Together?
+[Complementary use cases]
+
+## What the Research Says
+[Citations and evidence]
+
+## The Bottom Line
+[Summary recommendation]
+
+## Frequently Asked Questions
+[3-5 FAQs]
+
+---
+
+## About the Author
+**Christine Annie, MPT**
+
+## References
+[Citations]
+
+**Last Updated:** [Date]
+\`\`\`` : `### Template: Method/Educational Guide
+
+\`\`\`
+# [Foundational Topic]: What It Is, Why It Matters, and How to Address It
+
+## Quick Answer
+[Core concept explained simply - 2-3 sentences]
+
+## What You'll Learn
+- [Learning objective 1]
+- [Learning objective 2]
+- [Learning objective 3]
+
+---
+
+## What is [Topic]?
+[Clear definition with analogy if helpful]
+
+### [Topic] vs. [Related/Confused Concept]
+[Clarify distinction]
+
+## Why Does [Topic] Develop?
+[Causes organized by category]
+
+## How [Topic] Affects Your Body
+[Effects organized by body system/area]
+
+## The Aletha Health Approach to [Topic]
+[Your methodology]
+
+### Principle 1: [Core Principle]
+[Explanation]
+
+### Principle 2: [Core Principle]
+[Explanation]
+
+## How to Apply This Knowledge
+[Practical application]
+
+## Frequently Asked Questions
+[3-5 FAQs]
+
+## Key Takeaways
+[Summary points]
+
+## Related Guides
+[Links to related content]
+
+---
+
+## About the Author
+**Christine Annie, MPT**
+
+## Medical Disclaimer
+[Standard disclaimer]
+
+## References
+[Citations]
+
+**Last Updated:** [Date]
+\`\`\``}
+
+---
+
+## Content Quality Standards
+
+### Voice & Tone
+- **Authoritative but accessible**: Expert knowledge in plain language
+- **Empathetic**: Acknowledge pain/frustration readers are experiencing
+- **Solution-oriented**: Focus on actionable relief
+- **Honest**: Acknowledge limitations of self-treatment
+
+### Writing Guidelines
+- Use second person ("you") to address reader directly
+- Active voice preferred
+- Reading level: 8th-10th grade
+- Avoid jargon without explanation
+- Include analogies for complex anatomical concepts
+
+### Unique Value Requirements
+Each guide must include at least 2 of these elements:
+- Original clinical insight from Christine's experience
+- Unique data or survey findings from Aletha users
+- Custom illustrations or diagrams (note where needed)
+- Video demonstrations (note where needed)
+- Downloadable resources (checklists, guides)
+
+---
+
+## Pre-Publish Checklist
+
+**Content Quality**
+- [ ] Direct answer appears in first 50 words
+- [ ] Reading level checked (8th-10th grade)
+- [ ] Unique value element present
+
+**E-E-A-T**
+- [ ] Author attribution (Christine Annie, MPT)
+- [ ] Author bio with credentials
+- [ ] Medical disclaimer included
+
+**AEO Optimization**
+- [ ] Question-based H2s
+- [ ] FAQ section with 3-5 questions
+- [ ] Clear, extractable answers
+
+**SEO Optimization**
+- [ ] Primary keyword in H1, first 100 words, URL
+- [ ] Meta title 50-60 characters
+- [ ] Meta description 150-160 characters
+- [ ] Internal links (minimum 3)
+- [ ] External authoritative links (minimum 2)
+
+**Technical**
+- [ ] Schema markup specified
+- [ ] Image alt text noted
+- [ ] Mobile-friendly structure
+
+---
+
+## Current Task
+
+**Topic:** ${topic}
+**Guide Type:** ${guideType}
+
+Please create a comprehensive website guide following the format and requirements above. Load any relevant brand guidelines or existing content from the knowledge base first.`,
             },
           },
         ],
