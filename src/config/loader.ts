@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 export interface KnowledgeBaseConfig {
   rootFolderId: string;
@@ -264,12 +265,26 @@ export function getKBMapPath(): string {
   return join(getConfigDir(), "kb-map.md");
 }
 
+function getPackageRoot(): string {
+  // From compiled dist/config/loader.js → up 2 levels to repo/package root
+  const __filename = fileURLToPath(import.meta.url);
+  return join(dirname(dirname(dirname(__filename))));
+}
+
 export function loadKBMap(): string | null {
-  const mapPath = getKBMapPath();
-  if (!existsSync(mapPath)) {
-    return null;
+  // Priority 1: Config directory (local override)
+  const configMapPath = getKBMapPath();
+  if (existsSync(configMapPath)) {
+    return readFileSync(configMapPath, "utf-8");
   }
-  return readFileSync(mapPath, "utf-8");
+
+  // Priority 2: Bundled with the package
+  const packageMapPath = join(getPackageRoot(), "kb-map.md");
+  if (existsSync(packageMapPath)) {
+    return readFileSync(packageMapPath, "utf-8");
+  }
+
+  return null;
 }
 
 export function loadCoreDocs(): CoreDocsConfig {
