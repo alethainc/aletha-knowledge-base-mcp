@@ -2,6 +2,8 @@
 
 ## How to Use These Documents
 
+Use `read_docs` to load multiple documents in a single call by passing an array of IDs (up to 10). This is faster than calling `read_doc` repeatedly.
+
 - **Brand & Marketing Docs** → Constraints. Follow brand voice, style, and positioning. Do not deviate from approved messaging.
 - **Customer Personas & Journeys** → Context. Understand who you're writing for and where they are in the funnel. Use to inform tone and framing.
 - **Clinical & Research Docs** → Reference material. Cite and verify. These inform medical accuracy — never fabricate clinical claims.
