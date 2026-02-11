@@ -17,6 +17,7 @@ import { createDriveClient, DriveClient } from "./google/drive.js";
 import { searchDocs, formatSearchResults, SearchDocsArgs } from "./tools/search-docs.js";
 import { listFolder, formatFolderListing, ListFolderArgs } from "./tools/list-folder.js";
 import { readDoc, formatDocContent, ReadDocArgs } from "./tools/read-doc.js";
+import { readDocs, formatDocsContent, ReadDocsArgs } from "./tools/read-docs.js";
 import { listCoreDocs, formatCoreDocs } from "./tools/list-core.js";
 import { getKBMap, formatKBMap } from "./tools/kb-map.js";
 import { loadKBMap } from "./config/loader.js";
@@ -100,7 +101,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "read_doc",
         description:
-          "Read the full content of a document from the knowledge base. Use this to load document content into context for reference.",
+          "Read the full content of a single document. For loading multiple documents at once, use read_docs instead.",
         inputSchema: {
           type: "object" as const,
           properties: {
@@ -115,6 +116,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ["doc_id"],
+        },
+      },
+      {
+        name: "read_docs",
+        description:
+          "Read multiple documents at once by their IDs. Use this to load several documents into context in a single call — much faster than calling read_doc repeatedly. Accepts up to 10 document IDs.",
+        inputSchema: {
+          type: "object" as const,
+          properties: {
+            doc_ids: {
+              type: "array",
+              items: { type: "string" },
+              description: "Array of document IDs to read (max 10)",
+            },
+            format: {
+              type: "string",
+              enum: ["text", "markdown", "html"],
+              description: "Output format for all documents (default: markdown)",
+            },
+          },
+          required: ["doc_ids"],
         },
       },
       {
@@ -191,6 +213,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text" as const,
               text: formatDocContent(result),
+            },
+          ],
+        };
+      }
+
+      case "read_docs": {
+        const result = await readDocs(drive, config, args as unknown as ReadDocsArgs);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: formatDocsContent(result),
             },
           ],
         };
