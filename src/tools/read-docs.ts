@@ -1,6 +1,7 @@
 import { DriveClient } from "../google/drive.js";
 import { Config } from "../config/loader.js";
 import { readDoc, formatDocContent, ReadDocResult } from "./read-doc.js";
+import { getDocumentRole } from "../utils/document-roles.js";
 
 export interface ReadDocsArgs {
   doc_ids: string[];
@@ -54,7 +55,8 @@ export function formatDocsContent(result: ReadDocsResult): string {
   if (result.documents.length > 0) {
     sections.push(`Loaded ${result.documents.length} document(s):\n`);
     for (const doc of result.documents) {
-      sections.push(formatDocContent(doc));
+      const role = getDocumentRole(doc.id);
+      sections.push(formatDocContent(doc, role));
       sections.push("\n---\n");
     }
   }

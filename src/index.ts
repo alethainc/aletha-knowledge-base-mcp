@@ -21,6 +21,49 @@ import { readDocs, formatDocsContent, ReadDocsArgs } from "./tools/read-docs.js"
 import { listCoreDocs, formatCoreDocs } from "./tools/list-core.js";
 import { getKBMap, formatKBMap } from "./tools/kb-map.js";
 import { loadKBMap } from "./config/loader.js";
+import { getDocumentRole } from "./utils/document-roles.js";
+
+// Critical docs pre-loaded into prompts so Claude has constraints in context
+// from the start, rather than needing to fetch them via tool calls.
+// IDs match entries in kb-map.md — update here if they change there.
+const CRITICAL_MARKETING_DOCS = [
+  "1LZ-4x4ZPdTthGGf8RV67Mt68wXUsUj_4", // Brand Positioning
+  "1Wi_ol-uuYkHLJm9ieaHiMFzDFUW5weuP", // Writing Guidelines
+  "1LwOyI8-rIBQMrRDZ4mKcStNdJWb6fx2n", // Quick Claims Reference
+];
+
+/**
+ * Pre-loads documents from Drive and formats them with role labels.
+ * Returns the formatted content string and a list of any failed doc IDs.
+ * If Drive is unavailable, returns empty content gracefully.
+ */
+async function preloadDocs(
+  docIds: string[]
+): Promise<{ content: string; failed: string[] }> {
+  try {
+    const drive = await getDriveClient();
+    const results = await Promise.allSettled(
+      docIds.map((id) => readDoc(drive, config, { doc_id: id, format: "markdown" }))
+    );
+
+    const sections: string[] = [];
+    const failed: string[] = [];
+
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled") {
+        const role = getDocumentRole(result.value.id);
+        sections.push(formatDocContent(result.value, role));
+      } else {
+        failed.push(docIds[i]);
+      }
+    });
+
+    return { content: sections.join("\n\n---\n\n"), failed };
+  } catch (error) {
+    console.error("[aletha-mcp] Could not pre-load docs:", error);
+    return { content: "", failed: docIds };
+  }
+}
 
 let config: Config;
 let driveClient: DriveClient | null = null;
@@ -208,11 +251,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "read_doc": {
         const result = await readDoc(drive, config, args as unknown as ReadDocArgs);
+        const role = getDocumentRole(result.id);
         return {
           content: [
             {
               type: "text" as const,
-              text: formatDocContent(result),
+              text: formatDocContent(result, role),
             },
           ],
         };
@@ -313,13 +357,14 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   try {
     const drive = await getDriveClient();
     const result = await readDoc(drive, config, { doc_id: docId, format: "markdown" });
+    const role = getDocumentRole(docId);
 
     return {
       contents: [
         {
           uri,
           mimeType: "text/markdown",
-          text: formatDocContent(result),
+          text: formatDocContent(result, role),
         },
       ],
     };
@@ -423,6 +468,30 @@ Use \`read_doc\` with a document ID to load specific documents when needed.`,
 
     case "marketing-agent": {
       const task = args?.task || "create marketing content";
+      const { content: preloaded, failed } = await preloadDocs(CRITICAL_MARKETING_DOCS);
+
+      const failedNote =
+        failed.length > 0
+          ? `\n\n> **Note:** ${failed.length} document(s) could not be pre-loaded. Use \`read_doc\` with these IDs to load them manually: ${failed.map((id) => `\`${id}\``).join(", ")}\n`
+          : "";
+
+      const preloadedSection = preloaded
+        ? `## Pre-loaded Brand Guidelines
+
+The following documents have been loaded automatically. Each is labeled with its role — follow the instruction on each label.
+
+${preloaded}
+
+---
+${failedNote}`
+        : `## Load Brand Guidelines
+
+Pre-loading failed. Use \`get_kb_map\` to see available documents, then load these with \`read_doc\`:
+1. **Brand Positioning** — core brand voice and differentiators
+2. **Writing Guidelines** — tone, style, and copy standards
+3. **Quick Claims Reference** — approved product/health claims
+`;
+
       return {
         description: prompt.description,
         messages: [
@@ -432,45 +501,36 @@ Use \`read_doc\` with a document ID to load specific documents when needed.`,
               type: "text" as const,
               text: `## Marketing Creation Agent
 
-This agent is for marketing creation tasks, specifically landing pages and marketing emails.
+This agent creates marketing content for Aletha Health. The essential brand guidelines have been pre-loaded below — follow them in all output.
 
-## Step 1: Orient with the Knowledge Base Map
+${preloadedSection}
 
-First, call \`get_kb_map\` to load the knowledge base map. This tells you what documents exist, how they're categorized, and when to use them. Use it to identify which documents to load for this task.
+## Loading Additional Context
 
-## Step 2: Load Context
+If your task requires more context, use \`get_kb_map\` to see what's available, then \`read_doc\` to load specific documents. Common additions:
+- **Scroll-Stoppers & Messaging Ideas** — for ads, social posts, or email subject lines
+- **Customer Personas** — when targeting a specific audience segment
 
-Based on the map, use \`read_doc\` to load these documents by their IDs:
-
-1. **Brand Positioning** — core brand voice and differentiators
-2. **Writing Guidelines** — tone, style, and copy standards
-3. **Quick Claims Reference** — approved product/health claims
-4. **Scroll-Stoppers & Messaging Ideas** — if creating ads, social, or email subject lines
-5. **Customer Personas** — if targeting a specific audience segment
-
-Use additional documents from the map as the task requires. Do NOT use web search or external sources — all documents come from the connected Google Drive knowledge base.
+Do NOT use web search or external sources — all content comes from the Aletha knowledge base.
 
 ## Scope Boundaries
 
-**Include:** Brand guidelines, writing guidelines, approved marketing references, customer personas/journeys from the knowledge base
-**Exclude:** Technical documentation, clinical documents, finance documents, web searches, or external sources (unless the user explicitly requests them)
+**Include:** Brand guidelines, writing guidelines, approved marketing claims, customer personas/journeys
+**Exclude:** Clinical white papers, product manuals, finance documents, web searches (unless explicitly requested)
 
-## What This Agent Does NOT Do
+## What This Agent Does
 
-- Does not define or enforce writing style
-- Does not enforce language rules
-- Does not override standard MCP behavior
-- Does not replace human review
-
-This agent exists solely to ensure the correct Aletha brand and marketing knowledge is in context by default when creating marketing content.
+- Follows brand voice and writing style rules from the pre-loaded guidelines
+- Uses only approved claims from the Quick Claims Reference
+- Matches tone and terminology to Aletha standards
+- Delivers draft content for human review and iteration
 
 ## Process
 
-1. Call \`get_kb_map\` to orient yourself
-2. Use \`read_doc\` with document IDs from the map to load relevant brand and marketing documents
-3. Present the relevant guidelines to inform your output
-4. Address the marketing creation task
-5. Assume human review and iteration will follow
+1. Read the pre-loaded guidelines above carefully
+2. Load additional documents if the task requires them
+3. Create the requested content following all brand constraints
+4. Assume human review and iteration will follow
 
 ## Current Task
 ${task}`,
@@ -483,6 +543,27 @@ ${task}`,
     case "website-guide": {
       const topic = args?.topic || "a health/wellness topic";
       const guideType = args?.guide_type || "condition";
+      const { content: preloaded, failed } = await preloadDocs(CRITICAL_MARKETING_DOCS);
+
+      const failedNote =
+        failed.length > 0
+          ? `\n> **Note:** ${failed.length} brand doc(s) could not be pre-loaded. Use \`read_doc\` to load them manually: ${failed.map((id) => `\`${id}\``).join(", ")}\n`
+          : "";
+
+      const preloadedSection = preloaded
+        ? `## Pre-loaded Brand Guidelines
+
+The following brand documents have been loaded automatically. Follow them as indicated by their role labels.
+
+${preloaded}
+
+---
+${failedNote}`
+        : `## Load Brand Guidelines
+
+Pre-loading failed. Use \`get_kb_map\` to find and load Brand Positioning, Writing Guidelines, and Quick Claims Reference before starting.
+`;
+
       return {
         description: prompt.description,
         messages: [
@@ -494,13 +575,14 @@ ${task}`,
 
 This agent creates website guides optimized for both Answer Engine Optimization (AEO) and Search Engine Optimization (SEO). All content is designed to perform well in AI-generated answers (ChatGPT, Perplexity, Google AI Overviews) while also ranking in traditional search.
 
-## Automatic Context Loading
+${preloadedSection}
 
-Before creating the guide, use the Aletha Knowledge Base MCP tools to load relevant context:
+## Additional Context Loading
 
-1. **Brand guidelines** - Use \`search_docs\` with query "brand guidelines", then \`read_doc\` to load
-2. **Existing guides for reference** - Use \`search_docs\` with query "website guide" or the topic name to find similar content
-3. **Clinical/medical references** - Use \`search_docs\` with the condition/topic name to find supporting documentation
+Brand guidelines are pre-loaded above. Before creating the guide, also load topic-specific context using the MCP tools:
+
+1. **Existing guides for reference** - Use \`search_docs\` with the topic name to find similar content
+2. **Clinical/medical references** - Use \`search_docs\` with the condition/topic name to find supporting documentation
 
 **IMPORTANT:** Use the \`search_docs\` and \`read_doc\` tools from the aletha-knowledge-base MCP server.
 

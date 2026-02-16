@@ -1,6 +1,7 @@
 import { DriveClient, getFileMetadata, getFileContent } from "../google/drive.js";
 import { Config } from "../config/loader.js";
 import { convertToFormat, OutputFormat, getMimeTypeDescription } from "../utils/file-converter.js";
+import { DocumentRole } from "../utils/document-roles.js";
 
 export interface ReadDocArgs {
   doc_id: string;
@@ -78,13 +79,20 @@ export async function readDoc(
   };
 }
 
-export function formatDocContent(result: ReadDocResult): string {
-  const lines = [
-    `# ${result.name}`,
-    "",
-    `**Type:** ${result.fileType}`,
-    `**Last Modified:** ${new Date(result.metadata.modifiedTime).toLocaleString()}`,
-  ];
+export function formatDocContent(result: ReadDocResult, role?: DocumentRole | null): string {
+  const lines: string[] = [];
+
+  if (role) {
+    lines.push(`# [${role.label}] ${result.name}`);
+    lines.push("");
+    lines.push(`> **${role.instruction}**`);
+  } else {
+    lines.push(`# ${result.name}`);
+  }
+
+  lines.push("");
+  lines.push(`**Type:** ${result.fileType}`);
+  lines.push(`**Last Modified:** ${new Date(result.metadata.modifiedTime).toLocaleString()}`);
 
   if (result.metadata.lastModifyingUser) {
     lines.push(`**Modified By:** ${result.metadata.lastModifyingUser}`);
