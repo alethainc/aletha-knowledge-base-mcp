@@ -449,9 +449,9 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
             role: "user" as const,
             content: {
               type: "text" as const,
-              text: `You have access to the Aletha knowledge base through MCP tools. Below is a map of what's available. Read it to understand what documents exist and when to use them.
+              text: `You have access to the Aletha knowledge base through MCP tools. Below is a map of what's available — the documents, their categories, and when to use them.
 
-Internalize this as background knowledge — use it to inform your decisions, not as rigid instructions to follow literally.
+Brand guidelines, writing rules, and approved claims are mandatory constraints — follow them exactly. Clinical documents are reference material — cite accurately, never fabricate. Blog content is for inspiration only — do not copy verbatim.
 ${contextLine}
 ---
 
