@@ -545,7 +545,14 @@ Review your output against the pre-loaded guidelines and confirm each item:
 Flag any deviations you cannot resolve. Include this checklist (pass/fail per item) at the end of your response.
 
 ## Current Task
-${task}`,
+${task}
+
+---
+**REMINDERS — Do not ignore these:**
+- Use ONLY claims from the Quick Claims Reference — no inventing benefits
+- Product names exactly: Hip Hook Mark, Range, Orbit, Band
+- No superlatives ("best", "revolutionary", "groundbreaking") unless in approved claims
+- Medical disclaimer required on all health content`,
             },
           },
         ],
@@ -1131,7 +1138,15 @@ Include this checklist (pass/fail per item) at the end of your response.
 **Topic:** ${topic}
 **Guide Type:** ${guideType}
 
-Create a comprehensive website guide following the format, requirements, and template above. Load any relevant clinical or topic-specific content from the knowledge base first.`,
+Create a comprehensive website guide following the format, requirements, and template above. Load any relevant clinical or topic-specific content from the knowledge base first.
+
+---
+**REMINDERS — Do not ignore these:**
+- Use ONLY claims from the Quick Claims Reference — no inventing benefits
+- Product names exactly: Hip Hook Mark, Range, Orbit, Band
+- No superlatives ("best", "revolutionary", "groundbreaking") unless in approved claims
+- Medical disclaimer required on all health content
+- Author attribution: Christine Annie, MPT on every guide`,
             },
           },
         ],
