@@ -530,7 +530,19 @@ Do NOT use web search or external sources — all content comes from the Aletha 
 1. Read the pre-loaded guidelines above carefully
 2. Load additional documents if the task requires them
 3. Create the requested content following all brand constraints
-4. Assume human review and iteration will follow
+4. Run the compliance check below before delivering
+
+## Before Delivering Output
+
+Review your output against the pre-loaded guidelines and confirm each item:
+
+1. All product/health claims appear in the Quick Claims Reference
+2. Tone matches Writing Guidelines (no banned words, correct voice)
+3. Product names are exact: **Hip Hook Mark**, **Range**, **Orbit**, **Band**
+4. No fabricated clinical claims — every medical statement is from a loaded document
+5. Brand positioning and differentiators are consistent with Brand Positioning doc
+
+Flag any deviations you cannot resolve. Include this checklist (pass/fail per item) at the end of your response.
 
 ## Current Task
 ${task}`,
@@ -1089,12 +1101,37 @@ Each guide must include at least 2 of these elements:
 
 ---
 
+## Before Delivering Output
+
+After writing the guide, review it against the pre-loaded brand guidelines and this checklist. Confirm each item passes or flag deviations:
+
+**Brand Compliance**
+1. All product/health claims appear in the Quick Claims Reference
+2. Tone matches Writing Guidelines (no banned words, correct voice)
+3. Product names are exact: **Hip Hook Mark**, **Range**, **Orbit**, **Band**
+4. No fabricated clinical claims — every medical statement is from a loaded document
+
+**Content Quality**
+5. Direct answer appears in first 50 words
+6. Reading level: 8th-10th grade
+7. Author attribution: Christine Annie, MPT
+8. Medical disclaimer included
+
+**AEO/SEO**
+9. Question-based H2s with FAQ section (3-5 questions)
+10. Meta title (50-60 chars), meta description (150-160 chars), URL slug
+11. Internal links (min 3) and external authoritative links (min 2)
+
+Include this checklist (pass/fail per item) at the end of your response.
+
+---
+
 ## Current Task
 
 **Topic:** ${topic}
 **Guide Type:** ${guideType}
 
-Please create a comprehensive website guide following the format and requirements above. Load any relevant brand guidelines or existing content from the knowledge base first.`,
+Create a comprehensive website guide following the format, requirements, and template above. Load any relevant clinical or topic-specific content from the knowledge base first.`,
             },
           },
         ],
