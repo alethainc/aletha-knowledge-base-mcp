@@ -144,7 +144,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "read_doc",
         description:
-          "Read the full content of a single document. For loading multiple documents at once, use read_docs instead.",
+          "Read the full content of a single document. For loading multiple documents at once, use read_docs instead. Documents are labeled by role: Brand/Marketing docs are CONSTRAINTS (follow exactly), Clinical docs are REFERENCE (cite accurately, never fabricate), Blog content is INSPIRATION (do not copy verbatim), Product docs are SOURCE OF TRUTH (use exact names and instructions).",
         inputSchema: {
           type: "object" as const,
           properties: {
@@ -164,7 +164,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "read_docs",
         description:
-          "Read multiple documents at once by their IDs. Use this to load several documents into context in a single call — much faster than calling read_doc repeatedly. Accepts up to 10 document IDs.",
+          "Read multiple documents at once by their IDs (max 10). Much faster than calling read_doc repeatedly. Documents are labeled by role: Brand/Marketing docs are CONSTRAINTS (follow exactly), Clinical docs are REFERENCE (cite accurately, never fabricate), Blog content is INSPIRATION (do not copy verbatim), Product docs are SOURCE OF TRUTH (use exact names and instructions).",
         inputSchema: {
           type: "object" as const,
           properties: {
