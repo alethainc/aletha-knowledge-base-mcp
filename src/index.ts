@@ -20,8 +20,10 @@ import { readDoc, formatDocContent, ReadDocArgs } from "./tools/read-doc.js";
 import { readDocs, formatDocsContent, ReadDocsArgs } from "./tools/read-docs.js";
 import { listCoreDocs, formatCoreDocs } from "./tools/list-core.js";
 import { getKBMap, formatKBMap } from "./tools/kb-map.js";
-import { loadKBMap } from "./config/loader.js";
+import { getKBGuide, formatKBGuide } from "./tools/kb-guide.js";
+import { loadKBMap, loadKBGuide } from "./config/loader.js";
 import { getDocumentRole } from "./utils/document-roles.js";
+import { getCorrectionsForDoc, getFullGuide } from "./utils/kb-guide.js";
 
 // Critical docs pre-loaded into prompts so Claude has constraints in context
 // from the start, rather than needing to fetch them via tool calls.
@@ -200,6 +202,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "get_kb_guide",
+        description:
+          "Get the knowledge base guide — corrections, common errors, and usage guidelines that improve output quality. These corrections are documented from real user feedback.",
+        inputSchema: {
+          type: "object" as const,
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -216,6 +227,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         {
           type: "text" as const,
           text: formatKBMap(result),
+        },
+      ],
+    };
+  }
+
+  if (name === "get_kb_guide") {
+    const result = getKBGuide();
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: formatKBGuide(result),
         },
       ],
     };
@@ -252,11 +275,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "read_doc": {
         const result = await readDoc(drive, config, args as unknown as ReadDocArgs);
         const role = getDocumentRole(result.id);
+        let text = formatDocContent(result, role);
+
+        const corrections = getCorrectionsForDoc(result.id);
+        if (corrections) {
+          text += `\n\n---\n\n${corrections}`;
+        }
+
         return {
           content: [
             {
               type: "text" as const,
-              text: formatDocContent(result, role),
+              text,
             },
           ],
         };
@@ -325,6 +355,17 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
     });
   }
 
+  // Add KB guide as a resource if it exists
+  const guideContent = loadKBGuide();
+  if (guideContent) {
+    resources.unshift({
+      uri: "aletha://knowledge-base/guide",
+      mimeType: "text/markdown",
+      name: "Knowledge Base Guide",
+      description: "Corrections, common errors, and usage guidelines documented from real user feedback.",
+    });
+  }
+
   return { resources };
 });
 
@@ -349,6 +390,20 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           uri,
           mimeType: "text/markdown",
           text: formatKBMap(result),
+        },
+      ],
+    };
+  }
+
+  // Handle the KB guide resource
+  if (docId === "guide") {
+    const result = getKBGuide();
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "text/markdown",
+          text: formatKBGuide(result),
         },
       ],
     };
@@ -437,9 +492,22 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
       const mapResult = getKBMap();
       const mapContent = formatKBMap(mapResult);
       const taskContext = args?.task_context;
+      const guideContent = getFullGuide();
 
       const contextLine = taskContext
         ? `\nYour current task: ${taskContext}. Pay special attention to documents relevant to this work.\n`
+        : "";
+
+      const guideSection = guideContent
+        ? `## Known Issues & Corrections
+
+The following corrections are based on documented errors. Follow these to avoid common mistakes.
+
+${guideContent}
+
+---
+
+`
         : "";
 
       return {
@@ -459,7 +527,7 @@ ${mapContent}
 
 ---
 
-Use \`read_doc\` with a document ID to load specific documents when needed.`,
+${guideSection}Use \`read_doc\` with a document ID to load specific documents when needed.`,
             },
           },
         ],
@@ -469,6 +537,7 @@ Use \`read_doc\` with a document ID to load specific documents when needed.`,
     case "marketing-agent": {
       const task = args?.task || "create marketing content";
       const { content: preloaded, failed } = await preloadDocs(CRITICAL_MARKETING_DOCS);
+      const marketingGuideContent = getFullGuide();
 
       const failedNote =
         failed.length > 0
@@ -504,8 +573,15 @@ Pre-loading failed. Use \`get_kb_map\` to see available documents, then load the
 This agent creates marketing content for Aletha Health. The essential brand guidelines have been pre-loaded below — follow them in all output.
 
 ${preloadedSection}
+${marketingGuideContent ? `## Known Issues & Corrections
 
-## Loading Additional Context
+The following corrections are based on documented errors. Follow these to avoid common mistakes.
+
+${marketingGuideContent}
+
+---
+
+` : ""}## Loading Additional Context
 
 If your task requires more context, use \`get_kb_map\` to see what's available, then \`read_doc\` to load specific documents. Common additions:
 - **Scroll-Stoppers & Messaging Ideas** — for ads, social posts, or email subject lines
@@ -563,6 +639,7 @@ ${task}
       const topic = args?.topic || "a health/wellness topic";
       const guideType = args?.guide_type || "condition";
       const { content: preloaded, failed } = await preloadDocs(CRITICAL_MARKETING_DOCS);
+      const websiteGuideContent = getFullGuide();
 
       const failedNote =
         failed.length > 0
@@ -595,8 +672,15 @@ Pre-loading failed. Use \`get_kb_map\` to find and load Brand Positioning, Writi
 This agent creates website guides optimized for both Answer Engine Optimization (AEO) and Search Engine Optimization (SEO). All content is designed to perform well in AI-generated answers (ChatGPT, Perplexity, Google AI Overviews) while also ranking in traditional search.
 
 ${preloadedSection}
+${websiteGuideContent ? `## Known Issues & Corrections
 
-## Additional Context Loading
+The following corrections are based on documented errors. Follow these to avoid common mistakes.
+
+${websiteGuideContent}
+
+---
+
+` : ""}## Additional Context Loading
 
 Brand guidelines are pre-loaded above. Before creating the guide, also load topic-specific context using the MCP tools:
 
