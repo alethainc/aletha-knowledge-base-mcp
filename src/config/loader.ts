@@ -265,6 +265,10 @@ export function getKBMapPath(): string {
   return join(getConfigDir(), "kb-map.md");
 }
 
+export function getKBGuidePath(): string {
+  return join(getConfigDir(), "kb-guide.md");
+}
+
 function getPackageRoot(): string {
   // From compiled dist/config/loader.js → up 2 levels to repo/package root
   const __filename = fileURLToPath(import.meta.url);
@@ -282,6 +286,22 @@ export function loadKBMap(): string | null {
   const packageMapPath = join(getPackageRoot(), "kb-map.md");
   if (existsSync(packageMapPath)) {
     return readFileSync(packageMapPath, "utf-8");
+  }
+
+  return null;
+}
+
+export function loadKBGuide(): string | null {
+  // Priority 1: Config directory (local override)
+  const configGuidePath = getKBGuidePath();
+  if (existsSync(configGuidePath)) {
+    return readFileSync(configGuidePath, "utf-8");
+  }
+
+  // Priority 2: Bundled with the package
+  const packageGuidePath = join(getPackageRoot(), "kb-guide.md");
+  if (existsSync(packageGuidePath)) {
+    return readFileSync(packageGuidePath, "utf-8");
   }
 
   return null;
