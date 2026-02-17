@@ -2,6 +2,7 @@ import { DriveClient } from "../google/drive.js";
 import { Config } from "../config/loader.js";
 import { readDoc, formatDocContent, ReadDocResult } from "./read-doc.js";
 import { getDocumentRole } from "../utils/document-roles.js";
+import { getCorrectionsForDoc } from "../utils/kb-guide.js";
 
 export interface ReadDocsArgs {
   doc_ids: string[];
@@ -57,6 +58,12 @@ export function formatDocsContent(result: ReadDocsResult): string {
     for (const doc of result.documents) {
       const role = getDocumentRole(doc.id);
       sections.push(formatDocContent(doc, role));
+
+      const corrections = getCorrectionsForDoc(doc.id);
+      if (corrections) {
+        sections.push(corrections);
+      }
+
       sections.push("\n---\n");
     }
   }
