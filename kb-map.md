@@ -18,16 +18,20 @@ Use `read_docs` to load multiple documents in a single call by passing an array 
   Core brand positioning — mission, vision, differentiators, competitive landscape.
   *Load when creating any marketing content, landing pages, or brand-facing copy.*
 
-- **Aletha Style Guide (Usage)** (id: `1V3qCWP_MYVsfiHl99km5qUcoVgEmoovh`, PDF)
+- **Aletha Style Guide visual (Usage)** (id: `1uucFgft3MJDEhUZGuHOoLqCj-0LuD3_d4`, PDF)
   Visual and brand usage guidelines — logo usage, colors, typography, imagery.
-  *Load for any visual or layout work alongside brand positioning.*
+  *A visual guide for any visual or layout work alongside brand positioning. This file is easy for humans to read*
+
+- **Aletha Style Guide AI friendly** (id: `1kaqQAkUnjTTYmN2hzwIw0uExC7BBzmm5`, PDF)
+  Visual and brand usage guidelines — logo usage, colors, typography, imagery.
+  *A visual guide for any visual or layout work alongside brand positioning. This file is easy for humans to read*
 
 - **Aletha Writing Guidelines** (id: `1Wi_ol-uuYkHLJm9ieaHiMFzDFUW5weuP`, PDF)
-  Writing style, tone of voice, do's and don'ts for Aletha copy.
+  Writing style, tone of voice, product naming, how to talk about pain, do's and don'ts for Aletha copy.
   *Load when writing any customer-facing text — emails, landing pages, website copy, social posts.*
 
 - **Scroll-Stoppers & Messaging Ideas** (id: `1ab36DuM7siC-ad7z1efK0V2n6qozxrfK`, PDF)
-  Approved hooks, headlines, and messaging angles for social and ads.
+  Approved hooks, headlines, and messaging angles for website, social, sales, marketing, and ads.
   *Use as inspiration for ad copy, social posts, and email subject lines.*
 
 - **Quick Claims Reference** (id: `1LwOyI8-rIBQMrRDZ4mKcStNdJWb6fx2n`, PDF)
@@ -36,29 +40,34 @@ Use `read_docs` to load multiple documents in a single call by passing an array 
 
 - **External Research Addendum** (id: `19cqSjr9trqo308VGrOrBJ6Fa8ZdNyObX`, PDF)
   Supporting external research references for marketing claims.
-  *Reference when you need citations to back up marketing messaging.*
+  *External research reference when you need citations to back up marketing messaging for credibility.*
+
+- **Shopify Discount Philosophy** (id: `1mXjlxs2F80oF_nrEo9tBesyegTSi8EF0`, PDF)
+  Guiding principles for how we give discounts and commissions across platforms and affiliates as to provide weighted value to customers and incentive to affiliates without degrading premium brand or margins.
+  *Check when considering a discount, promotion, or sale*
 
 ## Customer Personas & Journeys
 
-- **Customer Personas** (id: `1C95lujaKnQTqUrZphou8BSDAmuDb5TgH`, PDF)
-  Detailed customer personas — demographics, pain points, motivations, objections.
-  *Load when creating targeted marketing content or audience-specific messaging.*
+- **Customer Objections** (id: `1836DP6o5wdMalhTRHFsrwPFNA3KWANT-`, PDF)
+  Customer objections that need to be addressed in marketing and sales communication to ensure conversion.
+  *Load when creating marketing copy across all platforms to identify objections to bust and areas of weakness in conversion.*
 
-- **Customer Journey — Overview** (id: `1ocriggn60Z_C0gVKdQ7uxFUVwoDxvdMl`, PDF)
-  Full customer journey map from awareness to advocacy.
-  *Load to understand the overall funnel and touchpoints.*
 
-- **Customer Journey — Acquisition** (id: `1UfB1X88F4K6e2HkT_HgKu2QTuBTsNRIJ`, PDF)
-  Acquisition-stage journey — how customers discover and evaluate Aletha.
-  *Load when working on top-of-funnel content: ads, landing pages, awareness campaigns.*
+- **Customer Personas Framework** (id: `1nJlrf_XJdrH_2VQAHiCixBATppeAY71v`, PDF)
+  Detailed customer personas — demographics, pain points, motivations, buying behavior.
+  *Load when creating marketing content or audience-specific messaging.*
 
-- **Customer Journey — Retention & Growth** (id: `1jxTjXyEOxoqYMP54ofD7tCTqr8OFZxyK`, PDF)
-  Post-purchase journey — onboarding, retention, upsell, and advocacy.
-  *Load when working on email sequences, onboarding flows, or loyalty content.*
+- **Customer Journey** (id: `1QTv5jhbhBEA7XQOt8HgtV67pmW1iJxL1`, PDF)
+  Full customer journey map from awareness to advocacy needed for all marketing decisions and copy.
+  *Load to understand what messaging is needed based on the step of the customer journey you are speaking to.*
 
-- **Practitioner Journey** (id: `1fL8lqL_WjG3rgFe_csrdW_ZJMGqeZsD2`, PDF)
+- **Practitioner Journey** (id: `1DZqFOHPDZd8dMIoZvXEpdlLnDIZaKLho`, PDF)
   Journey map for practitioner/professional audience (PTs, chiropractors, etc.).
   *Load when creating B2B or practitioner-targeted content.*
+
+- **Maternal persona** (id: `1b7GRScvU8fnjAJeC5Bs9NzFLx2CL1laj`, PDF)
+  Specific information about pre and post natal persona
+  *Reference when writing marketing or educational copy for the pre and post natal persona.*
 
 ## Clinical & Research
 
@@ -104,9 +113,13 @@ These are existing blog posts and topic deep-dives. Use as reference for tone, s
 - **Blogs Collection 33–66** (id: `1gDixYfXgMtseCeB9LYAhQRAqFx1qhWSQ`, DOCX)
 - **Blogs Collection 67–100** (id: `1aSeKCzg78qC31KvllbMcgS8oUENo2v9l`, DOCX)
 
-## Product
+## Product How to manuals
 
 Product manuals are the source of truth for device names, usage instructions, and capabilities. Use exact names: **Hip Hook** (original), **Hip Hook Mark** (updated version), **Range**, **Orbit**, **Band**.
+
+- **How to page organization and video transcripts** (id: `1MaLjldfjlnwvHsImonF0FlAQ4Ya0VOOt`, PDF)
+  Detailed copy and transcripts describing how to use the products and FAQs.
+  *Load when writing about how to use the products and how they work and answer questions about product use.*
 
 - **Hip Hook Mark Manual** (id: `1XPJwpzCjda7ivIyNf9amj5pDHSrkGfML`, PDF)
   Usage instructions for the Hip Hook Mark (primary product).
@@ -123,3 +136,45 @@ Product manuals are the source of truth for device names, usage instructions, an
 - **Band Manual** (id: `14f1UWCoE0rp2H40nczx9SqwXeS-x3upq`, PDF)
   Usage instructions for the Aletha Band (resistance/stretch band).
   *Load when writing about stretching, strengthening, or the Band product.*
+
+## Product Reviews
+
+Product reviews highlight personal stories about how the products have impacted real customers and healthcare providers. 
+
+- **Frontrow MD reviews Hip Hook** (id: `16hAaQ1QnJPKjXnB8cGDQuR81wSztsm-7`, CSV)
+  Reviews of various lengths from doctors for the Hip Hook Mark product.
+  *Load when needing credibility from a doctor when talking about the Hip Hook (Mark).*
+
+
+- **Frontrow MD reviews Range** (id: `1WOEwS0oh0ZpWMsk3xJ1yakdAo7gIUvTS`, CSV)
+  Reviews of various lengths from doctors for the Range product.
+  *Load when needing credibility from a doctor when talking about the Range.*
+
+- **Frontrow MD reviews Set or Full Body Release System** (id: `1QleVdGHTN_NOkdIQ1Yyh8YHrU3T5fP5`, CSV)
+  Reviews of various lengths from doctors for the Set or Full Body Release System product.
+  *Load when needing credibility from a doctor when talking about the Set or Full Body Release System.*
+
+- **Stamped.io reviews** (id: `1l7e_Rb3RfajCAt_98mD62wPt-T8dlcSc5`, CSV)
+  Reviews from customers for all products. Note names for Mark, Hip Hook, Helios can be used interchangeably, name Range and Nuckle can be used interchangeably.
+  *Load when needing to find a relevant review for a certain persona, product, condition, objection or activity to add credibility.*
+
+- **Amazon Mark reviews** (id: `10NPP9RkdWg2ZtCTZqf51sPKv5VIP2Ta_`, CSV)
+  Reviews from customers for Hip Hook aka Mark. Note names for Mark, Hip Hook, Helios can be used interchangeably.
+  *Load when needing to find a relevant review about the Hip Hook (Mark) for a certain persona, condition, objection or activity to add credibility.*
+
+## Product App
+https://drive.google.com/file/d/1peIeRfI6h9L0UkE_yOXrR_uGtQ_9qPAy/view?usp=drive_link
+
+- **Companion app reference** (id: `1peIeRfI6h9L0UkE_yOXrR_uGtQ_9qPAy`, PDF)
+  Customer objections handled by the app and explanation of its function and value.
+  *Load when handling customer objections and when talking about the app.*
+
+## Lead Gen
+
+Methods and philosophies for generating leads. 
+
+- **Frontrow MD reviews Hip Hook** (id: `1dvUWqOxw66N_w1PcjqE-bAcR6I0TncnY`, PDF)
+  Explanation of quiz, what is does, and how it helps the customer
+  *Load when writing marketing content to encourage people to take the quiz or to help handle their objections.*
+
+
