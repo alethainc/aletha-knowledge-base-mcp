@@ -26,7 +26,7 @@ Use `read_docs` to load multiple documents in a single call by passing an array 
   Visual and brand usage guidelines — logo usage, colors, typography, imagery.
   *A visual guide for any visual or layout work alongside brand positioning. This file is easy for humans to read*
 
-- **Aletha Writing Guidelines** (id: `1Wi_ol-uuYkHLJm9ieaHiMFzDFUW5weuP`, PDF)
+- **Aletha Writing Guidelines** (id: `1dGLY7duHa9rifM1eS1f_gVyL6dY0QvD7`, PDF)
   Writing style, tone of voice, product naming, how to talk about pain, do's and don'ts for Aletha copy.
   *Load when writing any customer-facing text — emails, landing pages, website copy, social posts.*
 
